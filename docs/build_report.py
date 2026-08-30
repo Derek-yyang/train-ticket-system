@@ -186,20 +186,22 @@ def font(size: int, bold: bool = False):
 
 def draw_er_diagram(output: Path):
     output.parent.mkdir(parents=True, exist_ok=True)
-    canvas = Image.new("RGB", (2400, 1450), "white")
+    canvas = Image.new("RGB", (2400, 1500), "white")
     draw = ImageDraw.Draw(canvas)
     title_font, box_font, line_font = font(42, True), font(25), font(22, True)
     draw.text((930, 38), "火车订票系统 E-R 图", font=title_font, fill="#1f2933")
 
     boxes = {
         "用户": (80, 200, 420, 420, ["用户ID（PK）", "用户名", "姓名", "角色"]),
-        "订单": (670, 205, 1030, 465, ["订单ID（PK）", "订单号", "用户ID（FK）", "班次ID（FK）", "状态"]),
-        "订单乘车人": (1320, 205, 1720, 465, ["订单乘车人ID（PK）", "订单ID（FK）", "班次座位ID（FK）", "乘车人姓名"]),
+        "订单": (670, 205, 1030, 490, ["订单ID（PK）", "订单号", "用户ID（FK）", "班次ID（FK）", "出发站ID（FK）", "到达站ID（FK）", "状态"]),
+        "订单乘车人": (1320, 205, 1720, 455, ["订单乘车人ID（PK）", "订单ID（FK）", "班次座位ID（FK）", "乘车人姓名", "票价"]),
         "班次座位": (1910, 205, 2300, 465, ["班次座位ID（PK）", "班次ID（FK）", "座位ID（FK）", "票价", "状态"]),
         "班次": (690, 760, 1020, 980, ["班次ID（PK）", "车次ID（FK）", "出发日期", "开售状态"]),
         "列车": (120, 1040, 430, 1245, ["列车ID（PK）", "车次编号", "车次名称"]),
-        "车站": (630, 1100, 1020, 1320, ["车站ID（PK）", "站点编号", "站点名称", "城市"]),
-        "车厢与座位": (1570, 1030, 2070, 1285, ["车厢ID（PK）", "列车ID（FK）", "座位ID（PK）", "座席类型", "座位号"]),
+        "车厢": (1520, 1040, 1850, 1260, ["车厢ID（PK）", "列车ID（FK）", "车厢号", "席别"]),
+        "座位": (1950, 1040, 2260, 1215, ["座位ID（PK）", "车厢ID（FK）", "座位号"]),
+        "途经站": (560, 1150, 950, 1410, ["列车ID、车站ID（联合PK）", "站序", "到达时间", "发车时间", "跨天偏移"]),
+        "车站": (1030, 1150, 1420, 1370, ["车站ID（PK）", "站点编号", "站点名称", "城市"]),
     }
     def center(rect):
         return ((rect[0] + rect[2]) // 2, (rect[1] + rect[3]) // 2)
@@ -216,14 +218,17 @@ def draw_er_diagram(output: Path):
         draw.text((x1 + 18, y1 + 10), label, font=box_font, fill="white")
         for index, field in enumerate(fields):
             draw.text((x1 + 20, y1 + 70 + index * 31), field, font=box_font, fill="#24303b")
-    connector((420, 310), (670, 310), "1", "N")
-    connector((1030, 335), (1320, 335), "1", "N")
-    connector((1720, 335), (1910, 335), "1", "1")
-    connector((850, 465), (850, 760), "N", "1")
-    connector((690, 870), (430, 1140), "N", "1")
-    connector((900, 980), (830, 1100), "N", "N")
-    connector((1020, 870), (1570, 1120), "1", "N")
-    connector((2070, 1120), (2100, 465), "1", "N")
+    connector((420, 310), (670, 310), "1", "N")        # 用户 1—N 订单
+    connector((1030, 340), (1320, 340), "1", "N")      # 订单 1—N 订单乘车人
+    connector((1720, 330), (1910, 330), "1", "1")      # 订单乘车人 1—1 班次座位
+    connector((850, 490), (850, 760), "N", "1")        # 订单 N—1 班次
+    connector((1020, 820), (1980, 465), "1", "N")      # 班次 1—N 班次座位
+    connector((2105, 1040), (2230, 465), "1", "N")     # 座位 1—N 班次座位
+    connector((690, 940), (430, 1150), "N", "1")       # 班次 N—1 列车
+    connector((430, 1100), (1520, 1100), "1", "N")     # 列车 1—N 车厢
+    connector((1850, 1100), (1950, 1100), "1", "N")    # 车厢 1—N 座位
+    connector((430, 1180), (560, 1270), "1", "N")      # 列车 1—N 途经站
+    connector((1030, 1300), (950, 1300), "1", "N")     # 车站 1—N 途经站
     canvas.save(output)
 
 
@@ -298,10 +303,10 @@ def build_report():
 
     add_heading(doc, "三、数据库设计")
     add_heading(doc, "（一）概念结构设计", 2)
-    add_body_paragraph(doc, "概念模型以“订单”为核心：一个用户可以拥有多个订单；一个订单包含一个乘车人记录并占用一个班次座位；一个班次属于一趟列车；列车通过停靠关系连接车站，列车由车厢和座位构成。班次座位将静态座位映射到具体出发日期，并保存票价和可售状态，从而支持余票查询和并发订票。")
+    add_body_paragraph(doc, "概念模型以“订单”为核心：一个用户可以拥有多个订单；一个订单包含一个乘车人记录并占用一个班次座位；一个班次属于一趟列车；列车通过途经站实体连接车站，途经站保存站序和到发时刻；列车由车厢和座位构成。班次座位将静态座位映射到具体出发日期，并保存票价和可售状态，从而支持余票查询和并发订票。")
     add_figure(doc, er_image, "图 1 火车订票系统 E-R 图", width=6.35)
     add_heading(doc, "（二）逻辑结构设计", 2)
-    add_body_paragraph(doc, "关系模型共包含 9 张核心表。所有表均使用 InnoDB 引擎；主键保证实体完整性，外键维护参照完整性，检查约束与状态字段维护用户定义完整性。以下表格列出每个关系的主要属性、数据类型和约束说明。")
+    add_body_paragraph(doc, "关系模型共包含 10 张表。所有表均使用 InnoDB 引擎；主键保证实体完整性，外键维护参照完整性，检查约束与状态字段维护用户定义完整性。以下表格列出每个关系的主要属性、数据类型和约束说明。")
 
     table_specs = [
         ("1. 用户表 app_users", [("user_id", "BIGINT", "主键，自增"), ("username", "VARCHAR(32)", "唯一，长度 3—32"), ("password_hash", "VARCHAR(255)", "非空，保存哈希值"), ("real_name", "VARCHAR(32)", "非空"), ("role", "ENUM", "PASSENGER 或 ADMIN")]),
@@ -312,13 +317,19 @@ def build_report():
         ("6. 座位表 train_seats", [("seat_id", "BIGINT", "主键，自增"), ("carriage_id", "BIGINT", "外键，关联车厢"), ("seat_no", "VARCHAR(8)", "同车厢内唯一")]),
         ("7. 班次表 train_schedules", [("schedule_id", "BIGINT", "主键，自增"), ("train_id", "BIGINT", "外键，关联列车"), ("travel_date", "DATE", "与列车联合唯一"), ("schedule_status", "ENUM", "ON_SALE、CANCELED、CLOSED")]),
         ("8. 班次座位表 schedule_seats", [("schedule_seat_id", "BIGINT", "主键，自增"), ("schedule_id", "BIGINT", "外键，关联班次"), ("seat_id", "BIGINT", "外键，联合唯一"), ("fare", "DECIMAL(10,2)", "大于 0"), ("seat_status", "ENUM", "AVAILABLE、SOLD、LOCKED")]),
-        ("9. 订单与乘车人表 orders / order_passengers", [("order_id / order_passenger_id", "BIGINT", "各自主键"), ("order_no", "VARCHAR(32)", "订单唯一编号"), ("user_id / schedule_id", "BIGINT", "关联用户和班次"), ("schedule_seat_id", "BIGINT", "唯一，避免座位重复出票"), ("order_status", "ENUM", "PENDING、CONFIRMED、CANCELED")]),
+        ("9. 订单表 orders", [("order_id", "BIGINT", "主键，自增"), ("order_no", "VARCHAR(32)", "唯一，订单编号"), ("user_id", "BIGINT", "外键，关联用户"), ("schedule_id", "BIGINT", "外键，关联班次"), ("departure_station_id / arrival_station_id", "BIGINT", "外键，出发/到达站，检查约束保证二者不等"), ("order_status", "ENUM", "PENDING、CONFIRMED、CANCELED"), ("total_amount", "DECIMAL(10,2)", "大于 0，订单总金额")]),
+        ("10. 订单乘车人表 order_passengers", [("order_passenger_id", "BIGINT", "主键，自增"), ("order_id", "BIGINT", "外键，关联订单"), ("schedule_seat_id", "BIGINT", "外键，唯一，避免座位重复出票"), ("passenger_name", "VARCHAR(32)", "非空，乘车人姓名"), ("passenger_id_number", "VARCHAR(18)", "非空，乘车人证件号"), ("ticket_price", "DECIMAL(10,2)", "大于 0，成交票价快照")]),
     ]
     for title_text, rows in table_specs:
         add_heading(doc, title_text, 2)
         add_table(doc, ["属性名", "数据类型", "约束说明"], rows, [4.2, 4.1, 8.0])
 
-    add_heading(doc, "（三）数据库高级对象与并发控制", 2)
+    add_heading(doc, "（三）规范化程度分析", 2)
+    add_body_paragraph(doc, "数据库规范化以函数依赖为判定依据。各表的属性均不可再分，满足第一范式；除列车停靠表使用（列车ID，车站ID）联合主键外，其余表均为单属性代理主键，天然不存在非主属性对候选键的部分函数依赖，满足第二范式。在联合主键表中，站序、到达时间、发车时间和跨天偏移均完全函数依赖于整个候选键，同样不存在部分依赖。")
+    add_body_paragraph(doc, "在第三范式检查中，各表的非主属性之间不存在传递函数依赖：席别由车厢直接决定并保存在车厢表中，座位表只保存座位号，未出现“座位→车厢→席别”的冗余链；订单金额直接依赖订单号，乘车人票价保存在乘车人记录中，订单表不重复存储逐票价格；车站、列车的描述属性均直接依赖各自主键。据此，全部 10 张表均满足第三范式，且所有决定因素都是候选键，符合 BCNF 的判定条件。")
+    add_body_paragraph(doc, "设计中保留了两处有业务含义的受控冗余：班次座位表的票价和订单乘车人表的票价都是成交当时的快照。铁路票价会随班次和日期调整，若仅通过联表实时计算，历史订单金额将随价格变动而失真；将票价随订单固化保存后，账务可追溯、可对账。两处字段均受检查约束（票价大于 0）保护，并在存储过程事务内一次性写入，保证数据一致。整体设计在满足第三范式的前提下，以少量快照字段换取业务可追溯性，是规范化程度与业务需求之间的合理权衡。")
+
+    add_heading(doc, "（四）数据库高级对象与并发控制", 2)
     add_table(doc, ["对象类型", "名称", "设计作用"], [
         ["视图", "v_train_schedule_search", "将班次、列车、停靠站和可售座位汇总为可按区间查询的车次结果。"],
         ["视图", "v_daily_sales", "以已确认订单为基础统计日销售额、订单数和售出票数。"],

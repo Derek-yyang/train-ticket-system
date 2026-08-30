@@ -43,7 +43,11 @@ SEAT_SUMMARY = [
 def write_page(app, name: str, template: str, **context):
     with app.test_request_context("/"):
         g.current_user = context.pop("current_user", None)
-        (OUT_DIR / name).write_text(render_template(template, **context), encoding="utf-8")
+        html = render_template(template, **context)
+    # 内联样式，使 HTML 脱离 Flask 也能以 file:// 方式渲染出完整外观。
+    css = (ROOT / "static" / "css" / "app.css").read_text(encoding="utf-8")
+    html = html.replace('<link rel="stylesheet" href="/static/css/app.css">', f"<style>{css}</style>")
+    (OUT_DIR / name).write_text(html, encoding="utf-8")
 
 
 def main():
