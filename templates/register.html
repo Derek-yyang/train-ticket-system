@@ -1,0 +1,5 @@
+{% extends 'base.html' %}
+{% block title %}注册{% endblock %}
+{% block content %}
+<section class="auth-wrap"><form class="auth-card" method="post"><p class="eyebrow">创建账号</p><h1>开始规划行程</h1><p>注册后即可查询和购买火车票。</p><label><span>用户名</span><input name="username" minlength="3" maxlength="32" autocomplete="username" required></label><label><span>密码</span><input type="password" name="password" minlength="6" autocomplete="new-password" required></label><label><span>真实姓名</span><input name="real_name" maxlength="32" autocomplete="name" required></label><label><span>身份证号</span><input name="id_number" minlength="15" maxlength="18" required></label><label><span>手机号（可选）</span><input name="phone" maxlength="20" autocomplete="tel"></label><button class="button button-primary button-wide" type="submit">注册账号</button><p class="auth-switch">已有账号？<a href="{{ url_for('login') }}">去登录</a></p></form></section>
+{% endblock %}

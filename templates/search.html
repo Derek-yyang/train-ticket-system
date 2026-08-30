@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}车次查询{% endblock %}
+{% block content %}
+<section class="page-band"><div class="shell"><p class="eyebrow">车次查询</p><h1>找到适合你的行程</h1></div></section>
+<section class="shell page-layout">
+  <form class="filter-panel" action="{{ url_for('search') }}" method="get">
+    <label><span>出发站</span><select name="departure_station_id" required><option value="">请选择</option>{% for station in stations %}<option value="{{ station.station_id }}" {{ 'selected' if selected.departure_station_id == station.station_id else '' }}>{{ station.city_name }} · {{ station.station_name }}</option>{% endfor %}</select></label>
+    <label><span>到达站</span><select name="arrival_station_id" required><option value="">请选择</option>{% for station in stations %}<option value="{{ station.station_id }}" {{ 'selected' if selected.arrival_station_id == station.station_id else '' }}>{{ station.city_name }} · {{ station.station_name }}</option>{% endfor %}</select></label>
+    <label><span>出发日期</span><input type="date" name="travel_date" value="{{ selected.travel_date }}" min="{{ today }}" required></label>
+    <button class="button button-primary" type="submit">重新查询</button>
+  </form>
+  <div class="search-results">
+    {% if not searched %}
+      <div class="empty-state"><strong>请选择出发站、到达站和日期</strong><p>系统会列出对应区间的可售车次。</p></div>
+    {% elif trains %}
+      <p class="result-count">共找到 {{ trains|length }} 个可售车次</p>
+      <div class="journey-list">
+      {% for trip in trains %}
+        <article class="journey-row journey-row-expanded">
+          <div class="journey-route"><strong>{{ trip.departure_station_name }}</strong><span>{{ trip.departure_time }}</span></div>
+          <div class="route-line" aria-hidden="true"><span></span></div>
+          <div class="journey-route"><strong>{{ trip.arrival_station_name }}</strong><span>{{ trip.arrival_time }}</span></div>
+          <div class="train-meta"><strong>{{ trip.train_code }}</strong><span>{{ trip.train_name }}</span></div>
+          <div class="journey-price"><span>余 {{ trip.available_seats }} 张</span><strong>¥{{ '%.2f'|format(trip.lowest_fare) }} 起</strong></div>
+          <a class="button button-primary" href="{{ url_for('trip_detail', schedule_id=trip.schedule_id, departure_station_id=trip.departure_station_id, arrival_station_id=trip.arrival_station_id) }}">选择席别</a>
+        </article>
+      {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state"><strong>没有找到可售车次</strong><p>请尝试修改日期或车站组合。</p></div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

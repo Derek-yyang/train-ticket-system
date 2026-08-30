@@ -1,0 +1,6 @@
+{% extends 'admin/base.html' %}
+{% block title %}车次开售{% endblock %}
+{% block admin_content %}
+<div class="admin-page-head"><div><p class="eyebrow">运行管理</p><h2>车次开售</h2></div><p class="page-note">停售不会删除业务数据，便于审计与恢复。</p></div>
+<section class="data-section"><div class="table-wrap"><table><thead><tr><th>日期</th><th>车次</th><th>总座位</th><th>可售余票</th><th>状态</th><th>操作</th></tr></thead><tbody>{% for schedule in schedules %}<tr><td>{{ schedule.travel_date }}</td><td><strong>{{ schedule.train_code }}</strong> · {{ schedule.train_name }}</td><td>{{ schedule.total_seats }}</td><td>{{ schedule.available_seats }}</td><td><span class="status status-{{ 'confirmed' if schedule.schedule_status == 'ON_SALE' else 'canceled' }}">{{ '开售中' if schedule.schedule_status == 'ON_SALE' else '已停售' }}</span></td><td><form method="post" action="{{ url_for('toggle_schedule', schedule_id=schedule.schedule_id) }}"><button class="button button-secondary" type="submit">{{ '停售' if schedule.schedule_status == 'ON_SALE' else '重新开售' }}</button></form></td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

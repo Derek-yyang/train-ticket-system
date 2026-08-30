@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}选择席别{% endblock %}
+{% block content %}
+<section class="page-band"><div class="shell"><a class="back-link" href="{{ url_for('search', departure_station_id=trip.departure_station_id, arrival_station_id=trip.arrival_station_id, travel_date=trip.travel_date) }}">← 返回查询结果</a><p class="eyebrow">{{ trip.travel_date }}</p><h1>{{ trip.train_code }} · {{ trip.train_name }}</h1></div></section>
+<section class="shell booking-layout">
+  <article class="trip-summary">
+    <div class="timeline-stop"><strong>{{ trip.departure_station_name }}</strong><span>{{ trip.departure_time }} 出发</span></div>
+    <div class="timeline-line"><span></span></div>
+    <div class="timeline-stop"><strong>{{ trip.arrival_station_name }}</strong><span>{{ trip.arrival_time }} 到达</span></div>
+    <dl><div><dt>出发日期</dt><dd>{{ trip.travel_date }}</dd></div><div><dt>可售余票</dt><dd>{{ trip.available_seats }} 张</dd></div></dl>
+  </article>
+  <section class="booking-form-wrap">
+    <div class="section-heading compact"><div><p class="eyebrow">选择席别</p><h2>填写乘车人信息</h2></div></div>
+    <form method="post" action="{{ url_for('create_order') }}" class="booking-form">
+      <input type="hidden" name="schedule_id" value="{{ trip.schedule_id }}"><input type="hidden" name="departure_station_id" value="{{ trip.departure_station_id }}"><input type="hidden" name="arrival_station_id" value="{{ trip.arrival_station_id }}">
+      <fieldset><legend>席别</legend><div class="seat-options">{% for seat in seat_summary %}<label class="seat-option"><input type="radio" name="seat_type" value="{{ seat.seat_type }}" {{ 'checked' if loop.first else '' }} {{ 'disabled' if not seat.available_count else '' }}><span><strong>{{ seat_type_labels[seat.seat_type] }}</strong><small>余 {{ seat.available_count }} 张</small></span><b>{% if seat.fare %}¥{{ '%.2f'|format(seat.fare) }}{% else %}售罄{% endif %}</b></label>{% endfor %}</div></fieldset>
+      <div class="field-grid"><label><span>乘车人姓名</span><input name="passenger_name" value="{{ current_user.real_name if current_user else '' }}" required></label><label><span>身份证号</span><input name="passenger_id_number" required maxlength="18"></label></div>
+      {% if current_user %}<button class="button button-primary button-wide" type="submit">确认订票</button>{% else %}<a class="button button-primary button-wide" href="{{ url_for('login', next=request.full_path) }}">登录后订票</a>{% endif %}
+    </form>
+  </section>
+</section>
+{% endblock %}

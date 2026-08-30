@@ -1,0 +1,5 @@
+{% extends 'base.html' %}
+{% block title %}登录{% endblock %}
+{% block content %}
+<section class="auth-wrap"><form class="auth-card" method="post"><p class="eyebrow">欢迎回来</p><h1>登录行程站</h1><p>登录后可完成订票并查看订单状态。</p><label><span>用户名</span><input name="username" autocomplete="username" required autofocus></label><label><span>密码</span><input type="password" name="password" autocomplete="current-password" required></label><button class="button button-primary button-wide" type="submit">登录</button><p class="auth-switch">还没有账号？<a href="{{ url_for('register') }}">立即注册</a></p><p class="form-note">乘客 demo / Demo@123 · 管理员 admin / Admin@123</p></form></section>
+{% endblock %}

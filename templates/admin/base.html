@@ -1,0 +1,7 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="admin-shell shell">
+  <aside class="admin-nav"><p class="eyebrow">管理员后台</p><h1>运营管理</h1><nav aria-label="后台导航"><a href="{{ url_for('admin_dashboard') }}" class="{{ 'active' if request.endpoint == 'admin_dashboard' else '' }}">运营概览</a><a href="{{ url_for('admin_stations') }}" class="{{ 'active' if request.endpoint == 'admin_stations' else '' }}">车站管理</a><a href="{{ url_for('admin_schedules') }}" class="{{ 'active' if request.endpoint == 'admin_schedules' else '' }}">车次开售</a><a href="{{ url_for('home') }}">返回乘客端</a></nav></aside>
+  <div class="admin-content">{% block admin_content %}{% endblock %}</div>
+</section>
+{% endblock %}
