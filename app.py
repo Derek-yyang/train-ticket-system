@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from functools import wraps
 
 import pymysql
@@ -109,6 +109,7 @@ def create_app() -> Flask:
             "seat_type_labels": SEAT_TYPE_LABELS,
             "order_status_labels": ORDER_STATUS_LABELS,
             "today": date.today().isoformat(),
+            "default_date": (date.today() + timedelta(days=1)).isoformat(),
         }
 
     @app.template_filter("cn_datetime")
@@ -141,7 +142,7 @@ def create_app() -> Flask:
         )
         departure_station_id = request.args.get("departure_station_id", type=int)
         arrival_station_id = request.args.get("arrival_station_id", type=int)
-        travel_date = request.args.get("travel_date") or date.today().isoformat()
+        travel_date = request.args.get("travel_date") or (date.today() + timedelta(days=1)).isoformat()
         trains = []
         searched = departure_station_id is not None and arrival_station_id is not None
 
