@@ -318,7 +318,7 @@ def build_report():
         ("7. 班次表 train_schedules", [("schedule_id", "BIGINT", "主键，自增"), ("train_id", "BIGINT", "外键，关联列车"), ("travel_date", "DATE", "与列车联合唯一"), ("schedule_status", "ENUM", "ON_SALE、CANCELED、CLOSED")]),
         ("8. 班次座位表 schedule_seats", [("schedule_seat_id", "BIGINT", "主键，自增"), ("schedule_id", "BIGINT", "外键，关联班次"), ("seat_id", "BIGINT", "外键，联合唯一"), ("fare", "DECIMAL(10,2)", "大于 0"), ("seat_status", "ENUM", "AVAILABLE、SOLD、LOCKED")]),
         ("9. 订单表 orders", [("order_id", "BIGINT", "主键，自增"), ("order_no", "VARCHAR(32)", "唯一，订单编号"), ("user_id", "BIGINT", "外键，关联用户"), ("schedule_id", "BIGINT", "外键，关联班次"), ("departure_station_id / arrival_station_id", "BIGINT", "外键，出发/到达站，检查约束保证二者不等"), ("order_status", "ENUM", "PENDING、CONFIRMED、CANCELED"), ("total_amount", "DECIMAL(10,2)", "大于 0，订单总金额")]),
-        ("10. 订单乘车人表 order_passengers", [("order_passenger_id", "BIGINT", "主键，自增"), ("order_id", "BIGINT", "外键，关联订单"), ("schedule_seat_id", "BIGINT", "外键，唯一，避免座位重复出票"), ("passenger_name", "VARCHAR(32)", "非空，乘车人姓名"), ("passenger_id_number", "VARCHAR(18)", "非空，乘车人证件号"), ("ticket_price", "DECIMAL(10,2)", "大于 0，成交票价快照")]),
+        ("10. 订单乘车人表 order_passengers", [("order_passenger_id", "BIGINT", "主键，自增"), ("order_id", "BIGINT", "外键，关联订单"), ("schedule_seat_id", "BIGINT", "外键，关联班次座位"), ("seat_lease_key", "BIGINT", "唯一，有效票标识：出票写入座位ID，退票置空，防止同一座位重复出票"), ("passenger_name", "VARCHAR(32)", "非空，乘车人姓名"), ("passenger_id_number", "VARCHAR(18)", "非空，乘车人证件号"), ("ticket_price", "DECIMAL(10,2)", "大于 0，成交票价快照")]),
     ]
     for title_text, rows in table_specs:
         add_heading(doc, title_text, 2)
@@ -338,7 +338,7 @@ def build_report():
         ["触发器", "trg_order_passengers_before_insert", "只有座位状态为 SOLD 时才允许写入乘车人记录。"],
         ["触发器", "trg_orders_after_update", "订单变为 CANCELED 时自动将关联班次座位恢复为 AVAILABLE。"],
     ], [2.4, 5.1, 8.8])
-    add_body_paragraph(doc, "并发控制方面，订单创建存储过程先开启事务，再使用 SELECT ... FOR UPDATE 对满足条件的最小可售座位执行排他锁。随后以 seat_status='AVAILABLE' 为条件更新座位状态，并检查影响行数是否为 1。若两个用户同时抢购最后一张票，后到的事务会在锁释放后发现没有可售座位并回滚，从而避免超卖。")
+    add_body_paragraph(doc, "并发控制方面，订单创建存储过程先开启事务，再使用 SELECT ... FOR UPDATE 对满足条件的最小可售座位执行排他锁。随后以 seat_status='AVAILABLE' 为条件更新座位状态，并检查影响行数是否为 1。若两个用户同时抢购最后一张票，后到的事务会在锁释放后发现没有可售座位并回滚，从而避免超卖。此外，订单乘车人表以 seat_lease_key 建立唯一约束作为数据库级兜底：出票时该列写入座位标识，退票触发器将其置空。历史车票因此不再阻碍已释放座位的再次出售，而同一座位同时存在两张有效车票的情形仍会被唯一约束直接拒绝。")
 
     add_heading(doc, "四、系统安装使用说明")
     add_heading(doc, "（一）安装步骤", 2)

@@ -135,8 +135,9 @@ CREATE TABLE IF NOT EXISTS order_passengers (
   passenger_name VARCHAR(32) NOT NULL,
   passenger_id_number VARCHAR(18) NOT NULL,
   ticket_price DECIMAL(10,2) NOT NULL,
+  seat_lease_key BIGINT UNSIGNED NULL,
   PRIMARY KEY (order_passenger_id),
-  UNIQUE KEY uk_order_passengers_schedule_seat (schedule_seat_id),
+  UNIQUE KEY uk_order_passengers_lease (seat_lease_key),
   KEY idx_order_passengers_order (order_id),
   CONSTRAINT fk_order_passengers_order FOREIGN KEY (order_id) REFERENCES orders(order_id),
   CONSTRAINT fk_order_passengers_schedule_seat FOREIGN KEY (schedule_seat_id) REFERENCES schedule_seats(schedule_seat_id),
@@ -212,6 +213,7 @@ BEGIN
   IF seat_state IS NULL OR seat_state <> 'SOLD' THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '座位未锁定，不能生成车票';
   END IF;
+  SET NEW.seat_lease_key = NEW.schedule_seat_id;
 END$$
 DELIMITER ;
 
@@ -239,7 +241,8 @@ BEGIN
   IF NEW.order_status = 'CANCELED' AND OLD.order_status <> 'CANCELED' THEN
     UPDATE schedule_seats ss
     JOIN order_passengers op ON op.schedule_seat_id = ss.schedule_seat_id
-    SET ss.seat_status = 'AVAILABLE'
+    SET ss.seat_status = 'AVAILABLE',
+        op.seat_lease_key = NULL
     WHERE op.order_id = NEW.order_id;
   END IF;
 END$$

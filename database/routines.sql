@@ -67,9 +67,9 @@ BEGIN
   END IF;
 
   INSERT INTO order_passengers (
-    order_id, schedule_seat_id, passenger_name, passenger_id_number, ticket_price
+    order_id, schedule_seat_id, passenger_name, passenger_id_number, ticket_price, seat_lease_key
   ) VALUES (
-    v_order_id, v_schedule_seat_id, p_passenger_name, p_passenger_id_number, v_fare
+    v_order_id, v_schedule_seat_id, p_passenger_name, p_passenger_id_number, v_fare, v_schedule_seat_id
   );
 
   COMMIT;
